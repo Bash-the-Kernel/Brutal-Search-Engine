@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Brutal Search Engine — Web UI</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    input[type=text] { width: 60%; padding: 8px; }
+    button { padding: 8px 12px; }
+    .result { border-bottom: 1px solid #ddd; padding: 8px 0; }
+    .path { color: #555; font-size: 0.9em; }
+    .score { color: #1a73e8; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Brutal Search Engine — Web UI</h1>
+  <p>Enter a query and click Search (the backend calls the local `search_engine` binary).</p>
+  <div>
+    <input id="query" type="text" placeholder="enter query (e.g. alice daisy)" />
+    <button id="btn">Search</button>
+  </div>
+  <div style="margin-top:12px">
+    <label>Index file: <input id="indexFile" type="text" value="index.dat" style="width:240px" /></label>
+  </div>
+  <div id="status" style="margin-top:12px;color:#666"></div>
+  <div id="results" style="margin-top:16px"></div>
+
+  <script>
+    const btn = document.getElementById('btn');
+    const qin = document.getElementById('query');
+    const results = document.getElementById('results');
+    const status = document.getElementById('status');
+    const idx = document.getElementById('indexFile');
+    btn.addEventListener('click', async () => {
+      const q = qin.value.trim();
+      if (!q) return;
+      results.innerHTML = '';
+      status.textContent = 'Searching...';
+      try {
+        const resp = await fetch('/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ index: idx.value || 'index.dat', query: q })
+        });
+        if (!resp.ok) throw new Error('Server error: ' + resp.status);
+        const data = await resp.json();
+        status.textContent = `Found ${data.results.length} results`;
+        if (data.results.length === 0) {
+          results.innerHTML = '<div>No results</div>';
+          return;
+        }
+        for (const r of data.results) {
+          const div = document.createElement('div');
+          div.className = 'result';
+          div.innerHTML = `<div class="score">${r.score.toFixed(4)}</div><div class="path">${r.path}</div>`;
+          results.appendChild(div);
+        }
+      } catch (err) {
+        status.textContent = 'Error: ' + err.message;
+      }
+    });
+  </script>
+</body>
+</html>

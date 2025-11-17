@@ -25,5 +25,7 @@ foreach ($b in $books) {
         Write-Warning "Failed to download $($b.url): $_"
     }
 }
-
-Write-Host "Done. You can index the downloaded files with:`n  .\search_engine.exe index $dest index.dat`" 
+Write-Host @"
+Done. You can index the downloaded files with:
+  .\search_engine.exe index $dest index.dat
+"@

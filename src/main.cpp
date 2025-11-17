@@ -6,6 +6,8 @@
 #include <cmath>
 #include "tokenizer.h"
 #include "inverted_index.h"
+#include <iomanip>
+#include <string>
 
 namespace fs = std::filesystem;
 
@@ -82,12 +84,47 @@ int main(int argc, char** argv) {
         std::vector<std::pair<int,double>> res;
         for (auto &kv : scores) res.push_back(kv);
         std::sort(res.begin(), res.end(), [](auto &a, auto &b){ return a.second > b.second; });
+
+        // Helper: escape JSON string
+        auto escape_json = [](const std::string &s)->std::string {
+            std::string out;
+            out.reserve(s.size()+4);
+            for (unsigned char c : s) {
+                switch (c) {
+                    case '"': out += "\\\""; break;
+                    case '\\': out += "\\\\"; break;
+                    case '\b': out += "\\b"; break;
+                    case '\f': out += "\\f"; break;
+                    case '\n': out += "\\n"; break;
+                    case '\r': out += "\\r"; break;
+                    case '\t': out += "\\t"; break;
+                    default:
+                        if (c < 0x20) {
+                            // control char
+                            char buf[8];
+                            std::snprintf(buf, sizeof(buf), "\\u%04x", c);
+                            out += buf;
+                        } else out.push_back((char)c);
+                }
+            }
+            return out;
+        };
+
+        std::ostringstream oss;
+        oss << "{\"query\":\"" << escape_json(q) << "\",\"results\":[";
         int shown = 0;
         for (auto &r : res) {
-            std::cout << "doc " << r.first << " score=" << r.second << " path=" << index.doc_path(r.first) << '\n';
+            if (shown) oss << ',';
+            oss << "{";
+            oss << "\"docid\":" << r.first << ',';
+            oss.setf(std::ios::fixed); oss<<std::setprecision(6);
+            oss << "\"score\":" << r.second << ',';
+            oss << "\"path\":\"" << escape_json(index.doc_path(r.first)) << "\"";
+            oss << "}";
             if (++shown >= 20) break;
         }
-        if (res.empty()) std::cout << "No results.\n";
+        oss << "]}";
+        std::cout << oss.str() << std::endl;
     } else {
         std::cerr << "Unknown command: " << cmd << "\n";
         return 1;

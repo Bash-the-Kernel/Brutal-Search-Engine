@@ -87,5 +87,26 @@ PowerShell:
 ```
 
 Notes:
-- Gutenberg URLs may change; the script uses common file URLs but may need updates if Gutenberg reorganizes.
-- For full Wikipedia testing, download a small XML dump (e.g., the `enwiki-latest-pages-articles` subset) and extract plain text — that requires more processing and parsing, which I can help add next.
+
+**Web GUI (quick test)**
+
+I added a minimal web UI in `web_ui/` so you can try queries from a browser. It's a static `index.html` and a small Flask server (`web_ui/server.py`) that calls the local `search_engine` binary in `build/`.
+
+Requirements:
+- Python 3 and `Flask` installed. Install with:
+
+```
+py -3 -m pip install flask
+```
+
+Run the server (from repository root):
+
+```
+py -3 web_ui\server.py
+```
+
+Open http://127.0.0.1:5000/ in your browser. The UI sends queries to the Flask server which runs `search_engine query` under the hood.
+
+Notes:
+- Ensure you've built the C++ binary (`cmake` + `cmake --build`) so `build/search_engine.exe` exists.
+- The Flask server is intentionally simple and executes the `search_engine` binary as a subprocess; for production or higher performance, we can integrate the searcher directly into an HTTP server in C++.
