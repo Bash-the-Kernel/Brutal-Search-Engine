@@ -1,0 +1,53 @@
+# --- Build directories ---
+build/
+build-debug/
+build-release/
+out/
+bin/
+obj/
+
+# --- CMake cache and generated files ---
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+Makefile
+
+# --- Compiled object files ---
+*.o
+*.obj
+*.lo
+*.slo
+
+# --- Libraries / binaries ---
+*.a
+*.so
+*.so.*
+*.dll
+*.dylib
+*.lib
+*.exe
+
+# --- Debug / profiling files ---
+*.log
+*.core
+*.gmon
+*.swp
+*.swo
+
+# --- IDE settings ---
+# VSCode
+.vscode/
+# CLion / JetBrains
+.idea/
+cmake-build-*/
+
+# --- OS files ---
+# macOS
+.DS_Store
+# Windows
+Thumbs.db
+desktop.ini
+
+# --- Generated index file ---
+index.dat
