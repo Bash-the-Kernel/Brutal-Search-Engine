@@ -1,112 +1,173 @@
-**C++ Search Engine (Portfolio Project)**
+# Brutal Search Engine
 
-- **Purpose**: Compact, resume-ready C++ search engine that indexes plain-text files and answers simple queries using an inverted index and TF-IDF ranking.
+A compact, minimal C++ search engine designed as a portfolio project and learning exercise. It indexes plain-text files using a simple inverted index and returns ranked results using a basic TF–IDF scoring model.
 
-**Features (MVP)**
-- Index all `*.txt` files in a directory (recursive).
-- Tokenization with stop-word removal and lowercase normalization.
-- Inverted index persisted to disk (simple text format).
-- CLI supporting:
-  - `index <folder> <index-file>` — build an index from a folder of text files.
-  - `query <index-file> <query string>` — simple ranked retrieval using TF-IDF.
+This repository contains:
 
-**Quick Build (Windows PowerShell)**
-```
-# from project root
-mkdir build; cd build
-cmake ..
-cmake --build . -- -j
-```
+- A small tokenizer and inverted-index implementation (C++17).
+- A command-line interface (`index` and `query`) for building and searching an index.
+- Simple persistence (human-readable index format).
+- A tiny web UI (Flask) for interactive testing.
+- Utility script to fetch a few Project Gutenberg texts for experimentation.
 
-**Run examples**
-- Index a folder of text files:
-```
-.\search_engine.exe index C:\path\to\texts index.dat
-```
-- Query the index (multiple words are treated as terms summed in TF-IDF):
-```
-.\search_engine.exe query index.dat "apple banana"
-```
+---
 
-**Index file format (simple, human-readable)**
-- First line: `DOCS <N>` where `<N>` is number of documents.
-- Next `N` lines: `<doc_id> <path>` mapping doc id -> file path.
-- Remaining lines: one term per line, followed by postings `doc_id:tf` pairs separated by spaces.
+## Quick highlights
 
-Example snippet:
-```
-DOCS 2
-0 C:\texts\a.txt
-1 C:\texts\b.txt
-apple 0:3 1:1
-banana 1:2
+- Index `.txt` files recursively from a directory.
+- Tokenization: lowercase + alphanumeric filtering + stop-word removal.
+- Retrieval: TF–IDF scoring (sum over query terms). Top results are returned.
+- Lightweight and dependency-free C++ core — easy to extend for research or demos.
+
+---
+
+## Build
+
+Requirements
+
+- C++17 toolchain (MSVC, GCC or Clang)
+- CMake 3.16+
+
+Build (recommended — cross-platform)
+
+PowerShell / Windows (from repository root):
+```powershell
+mkdir build
+cmake -S . -B build
+cmake --build build --config Release
 ```
 
-**Design notes**
-- Tokenizer: converts to lowercase, strips non-alphanumerics, splits on whitespace, removes a small stop-word list.
-- Indexer: collects per-document term frequencies and appends postings for each term.
-- Query scoring: for a query of terms, score each document by summing `tf * idf` for matching terms, where `idf = ln(N / (1 + df))`.
-
-**Limitations (current MVP)**
-- Query parsing is basic (no boolean operators or phrase queries).
-- Ranking is unnormalized (no cosine normalization or length normalization).
-- Persistence uses a simple text format — not optimized for speed or space.
-- Tokenization has no stemming; punctuation handling is simple.
-- Indexing is single-threaded in this MVP (can be upgraded to multi-threading).
-
-**Next recommended improvements**
-- Normalize scores (cosine similarity with TF-IDF vectors).
-- Add boolean/phrase/proximity queries and a small query parser (support `AND`, `OR`, `NOT`).
-- Add stemming (Porter) and more advanced tokenization.
-- Make indexing multi-threaded and add incremental indexing support.
-- Replace text persistence with a binary or JSON format (e.g., `nlohmann/json`) or memory-mapped files for larger corpora.
-- Add unit tests (Catch2) and a small sample dataset for CI.
-
-**Files of interest**
-- `CMakeLists.txt` — build configuration.
-- `include/tokenizer.h`, `src/tokenizer.cpp` — tokenization.
-- `include/inverted_index.h`, `src/inverted_index.cpp` — inverted index and persistence.
-- `src/main.cpp` — CLI entrypoint for `index` and `query` commands.
-
-**How I can help next**
-
-If you want, I can replace the existing `README.md` with this expanded version now — say "replace" and I'll overwrite the original.
-**Sample dataset and fetching**
-
-I added a small local sample corpus in `sample_texts/` so you can test immediately without downloading anything. It contains three short public-domain excerpts.
-
-If you want a larger dataset, use Project Gutenberg or a Wikipedia dump. I included `scripts/fetch_gutenberg.ps1` to download three public-domain books into `sample_texts/gutenberg/` (PowerShell script; run from the repository root). Example:
-
-PowerShell:
-```
-# from repository root
-.\scripts\fetch_gutenberg.ps1
-
-# then index the downloaded files
-.\build\search_engine.exe index sample_texts/gutenberg index.dat
+Linux / macOS (from repository root):
+```bash
+mkdir -p build
+cmake -S . -B build
+cmake --build build -j
 ```
 
-Notes:
+After a successful build the executable will be at `build/Release/search_engine.exe` (Windows MSVC) or `build/search_engine` (Unix / Makefile/Ninja).
 
-**Web GUI (quick test)**
+---
 
-I added a minimal web UI in `web_ui/` so you can try queries from a browser. It's a static `index.html` and a small Flask server (`web_ui/server.py`) that calls the local `search_engine` binary in `build/`.
+## CLI Usage
 
-Requirements:
-- Python 3 and `Flask` installed. Install with:
+Index files:
 
+```powershell
+# from repository root (Windows example)
+.\build\Release\search_engine.exe index sample_texts index.dat
 ```
+
+Query an index:
+
+```powershell
+.\build\Release\search_engine.exe query index.dat "alice"
+```
+
+The `query` command prints JSON results to stdout (fields: `query`, `results` where each result has `docid`, `score`, `path`). This JSON output is consumed by the included web UI.
+
+---
+
+## Index format
+
+The project uses a simple, human-readable index format (suitable for debugging and small corpora). It contains:
+
+- A header with the number of documents: `DOCS <N>`
+- `N` lines mapping `<doc_id> <path>`
+- Term lines: `<term> <doc_id>:<tf> <doc_id>:<tf> ...`
+
+This format is intentionally simple; for production work consider binary formats or using `nlohmann/json` / memory-mapped structures.
+
+---
+
+## Web UI (development)
+
+There is a minimal browser UI in `web_ui/` for quick exploration.
+
+Prerequisites: Python 3 and Flask
+
+Install Flask:
+
+```powershell
 py -3 -m pip install flask
 ```
 
 Run the server (from repository root):
 
-```
+```powershell
 py -3 web_ui\server.py
 ```
 
-Open http://127.0.0.1:5000/ in your browser. The UI sends queries to the Flask server which runs `search_engine query` under the hood.
+Open `http://127.0.0.1:5000/` in your browser and provide the path to an `index.dat` file.
 
 Notes:
-- Ensure you've built the C++ binary (`cmake` + `cmake --build`) so `build/search_engine.exe` exists.
-- The Flask server is intentionally simple and executes the `search_engine` binary as a subprocess; for production or higher performance, we can integrate the searcher directly into an HTTP server in C++.
+
+- The Flask server calls the `search_engine` binary as a subprocess. This is convenient for development but not optimal for production. If you prefer a single native binary I can add an embedded HTTP server (e.g., `cpp-httplib`).
+
+---
+
+## Sample data
+
+The repository includes `sample_texts/` with a few short public-domain excerpts to test functionality immediately.
+
+For a larger dataset, `scripts/fetch_gutenberg.ps1` can download a few Project Gutenberg plain-text files into `sample_texts/gutenberg/`.
+
+Example (PowerShell):
+
+```powershell
+.\scripts\fetch_gutenberg.ps1
+.\build\Release\search_engine.exe index sample_texts\gutenberg index.dat
+```
+
+---
+
+## Design notes & limitations
+
+- Tokenizer: lowercase, strip non-alphanumerics, remove short stop-word list.
+- Indexer: stores per-term posting lists with term-frequency (tf).
+- Ranking: TF–IDF with `idf = ln(N / (1 + df))` and scores summed across query terms (no vector normalization yet).
+
+Limitations (MVP):
+
+- No stemming or advanced tokenization.
+- No phrase or boolean query support.
+- Single-threaded indexing for simplicity.
+- Simple text persistence; not optimized for large corpora.
+
+---
+
+## Development roadmap (suggested next steps)
+
+- Normalize scores (cosine similarity / document vector normalization).
+- Add boolean and phrase queries (AND/OR/NOT, quoted phrases).
+- Add stemming (Porter) and better tokenization.
+- Make indexing multi-threaded and add incremental updates.
+- Replace text persistence with efficient binary or memory-mapped storage.
+- Add unit tests (Catch2) and CI for reproducible builds.
+
+---
+
+## Contributing
+
+Contributions are welcome. Suggested workflow:
+
+1. Fork the repository and create a feature branch.
+2. Implement changes and add tests where appropriate.
+3. Open a pull request describing the change and rationale.
+
+If you want, I can open PR templates, CI config (GitHub Actions), and unit-test scaffolding.
+
+---
+
+## License
+
+This project is provided for educational purposes. Add a LICENSE file if you plan to publish or redistribute the code.
+
+---
+
+If you'd like, I can also:
+
+- Add JSON schema examples and a sample `index.dat` in `sample_texts/`.
+- Implement snippet extraction and highlighting in the C++ JSON output.
+- Replace the Flask UI with an integrated C++ HTTP server to remove the Python dependency.
+
+Tell me which of these you want next and I will implement it.
